@@ -1,4 +1,5 @@
----
+"Use when the user says '/deal-quality'
+
 name: deal-quality
 description: Review a deal desk approved pricing document for quality, completeness, pricing/margin sanity, and missing approvals. Trigger on "/deal-quality", "review this pricing deal", or "check deal desk pricing quality".
 ---
