@@ -1,0 +1,21 @@
+name: Deal Quality Review
+
+on:
+  push:
+    paths:
+      - 'deals/**'
+  workflow_dispatch:   # lets you click "Run workflow" manually to test
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run deal quality review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ZAPIER_WEBHOOK_URL: ${{ secrets.ZAPIER_WEBHOOK_URL }}
+        run: |
+          pip install anthropic requests
+          python .github/scripts/run_deal_quality.py
