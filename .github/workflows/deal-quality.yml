@@ -11,7 +11,7 @@ jobs:
       - run: |
           mkdir -p /home/runner
           echo "{\"projects\":{\"${GITHUB_WORKSPACE}\":{\"hasTrustDialogAccepted\":true}}}" > /home/runner/.claude.json
-      - run: claude --permission-mode bypassPermissions -p "run deal quality review on the file in deals/" > review.txt
+      - run: claude --allowedTools "Bash,Read,Grep,Glob" -p "run deal quality review on the file in deals/" > review.txt
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - run: python3 post_to_zapier.py
