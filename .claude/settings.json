@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob"
+    ],
+    "ask": [
+      "Write",
+      "Edit",
+      "Bash"
+    ],
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)"
+    ]
+  }
+}
