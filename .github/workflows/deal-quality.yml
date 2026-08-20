@@ -1,21 +1,20 @@
-name: Deal Quality Review
-
+# .github/workflows/deal-quality.yml
 on:
-  push:
-    paths:
-      - 'deals/**'
-  workflow_dispatch:   # lets you click "Run workflow" manually to test
+  workflow_dispatch:
 
 jobs:
-  review:
+  deal-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Run deal quality review
+      - run: npm i -g @anthropic-ai/claude-code
+      - run: |
+          claude -p "run deal quality review on the file in deals/"
+          > review.txt
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          ZAPIER_WEBHOOK_URL: ${{ secrets.ZAPIER_WEBHOOK_URL }}
-        run: |
-          pip install anthropic requests
-          python .github/scripts/run_deal_quality.py
+          ANTHROPIC_API_KEY:
+            ${{ secrets.ANTHROPIC_API_KEY }}
+      - run: python3 post_to_zapier.py
+        env:
+          ZAPIER_WEBHOOK_URL:
+            ${{ secrets.ZAPIER_WEBHOOK_URL }}
