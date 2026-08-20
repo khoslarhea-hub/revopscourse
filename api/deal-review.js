@@ -1,13 +1,12 @@
 export default async function handler(req, res) {
   try {
-    const dealQuery = (req.query.deal || '').toLowerCase();
-    if (!dealQuery) {
-      return res.status(400).json({ error: 'Missing deal name. Use ?deal=acme' });
+    const message = (req.query.text || req.body?.text || '').toLowerCase();
+    if (!message) {
+      return res.status(400).json({ error: 'Missing message text. Use ?text=review the acme deal' });
     }
 
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const REPO = process.env.GITHUB_REPO; // e.g. "khoslarhea-hub/revopscourse"
-
+    const REPO = process.env.GITHUB_REPO;
     const ghHeaders = {
       Authorization: `Bearer ${GITHUB_TOKEN}`,
       Accept: 'application/vnd.github+json',
@@ -20,16 +19,37 @@ export default async function handler(req, res) {
     }
     const files = await listRes.json();
 
-    const match = files.find(f => f.name.toLowerCase().includes(dealQuery));
-    if (!match) {
-      return res.status(404).json({ error: `No deal file matching "${dealQuery}" found in deals/` });
+    // 2. Score each file by how many of its name-words appear in the message
+    const stopWords = new Set(['deal', 'pricing', 'the', 'md', 'txt', 'pdf', 'xlsx']);
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const file of files) {
+      const nameWords = file.name
+        .toLowerCase()
+        .replace(/\.(md|txt|pdf|xlsx)$/, '')
+        .split(/[-_\s]+/)
+        .filter(w => w.length >= 3 && !stopWords.has(w));
+
+      const score = nameWords.filter(w => message.includes(w)).length;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = file;
+      }
     }
 
-    // 2. Fetch the matched deal file content
-    const dealRes = await fetch(match.download_url);
+    if (!bestMatch || bestScore === 0) {
+      return res.status(404).json({
+        error: `Could not confidently match a deal to: "${message}"`,
+        availableDeals: files.map(f => f.name),
+      });
+    }
+
+    // 3. Fetch the matched deal file content
+    const dealRes = await fetch(bestMatch.download_url);
     const dealText = await dealRes.text();
 
-    // 3. Fetch the skill instructions
+    // 4. Fetch the skill instructions
     const skillRes = await fetch(
       `https://api.github.com/repos/${REPO}/contents/.claude/skills/deal-quality/SKILL.md`,
       { headers: ghHeaders }
@@ -37,7 +57,7 @@ export default async function handler(req, res) {
     const skillJson = await skillRes.json();
     const skillText = Buffer.from(skillJson.content, 'base64').toString('utf-8');
 
-    // 4. Call Claude API
+    // 5. Call Claude API
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -58,7 +78,7 @@ export default async function handler(req, res) {
     const claudeJson = await claudeRes.json();
     const review = claudeJson.content?.[0]?.text || 'No response generated.';
 
-    return res.status(200).json({ file: match.name, review });
+    return res.status(200).json({ matchedFile: bestMatch.name, matchConfidence: bestScore, review });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
