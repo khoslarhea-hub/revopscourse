@@ -8,14 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm i -g @anthropic-ai/claude-code
-      - run: |
-          claude -p "run deal quality review on the file in deals/" \
-            --dangerously-skip-permissions \
-          > review.txt
+      - run: claude -p "run deal quality review on the file in deals/" --dangerously-skip-permissions > review.txt
         env:
-          ANTHROPIC_API_KEY:
-            ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - run: python3 post_to_zapier.py
         env:
-          ZAPIER_WEBHOOK_URL:
-            ${{ secrets.ZAPIER_WEBHOOK_URL }}
+          ZAPIER_WEBHOOK_URL: ${{ secrets.ZAPIER_WEBHOOK_URL }}
